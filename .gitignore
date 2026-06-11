@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Figures (large binary, regenerate from source)
+figures/*.png
+
+# Archive (old broken versions)
+archive/
+
+# OS
+.DS_Store
