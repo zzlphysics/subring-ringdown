@@ -137,10 +137,14 @@ def subring_ratio(a, m=2, q=1, aligned=False):
     R_geom = np.exp(-gq + 1j*phase)
     
     # Branch info
+    # For R^align:  phase_mod = q ω_R τ (mod 2π)
+    #   → ω_R = (phase_mod + 2πk) / (qτ)
+    # For R^pix:    phase_mod = q(ω_R τ - mδ) (mod 2π)
+    #   → ω_R = (phase_mod + 2πk + q m δ) / (qτ)
     phase_mod = phase % (2*pi)
-    k_min = int(np.floor((wR_tq)/(2*pi)))  # how many full cycles
+    k_min = int(np.floor(wR_tq / (2*pi)))
     
-    return {
+    result = {
         'label': 'align' if aligned else 'pix',
         'q': q, 'aligned': aligned,
         'gamma_q': gq, 'tau_q': tq, 'delta_q': dq,
@@ -152,17 +156,39 @@ def subring_ratio(a, m=2, q=1, aligned=False):
         'm_delta_q_deg': np.degrees(mdq),
         # Raw ratio (full complex QNM)
         'R_raw': R_raw,
-        'amp_raw': abs(R_raw),        # exp[-q γ + q ω_I τ]
+        'amp_raw': abs(R_raw),
         # Geometric only (envelope-removed)
         'R_geom': R_geom,
-        'amp_geom': abs(R_geom),      # exp[-q γ]
+        'amp_geom': abs(R_geom),
         # Phase
         'phase_mod_deg': np.degrees(phase_mod),
         'phase_unwrapped_deg': np.degrees(phase),
         'phase_total_deg': np.degrees(phase),
         'branch_k_min': k_min,
-        'omega_R_from_phase_mod': phase_mod / tq if tq > 0 else 0,
+        # True ω_R recovery candidates
+        'omega_R_candidates': _omega_candidates(phase_mod, tq, dq, m, q, aligned),
     }
+    return result
+
+
+def _omega_candidates(phase_mod, tau_q, delta_q, m, q, aligned,
+                      k_range=range(-2, 6)):
+    """Recover possible ω_R values from a modulo-2π phase measurement.
+    
+    For R^align: ω_R = (φ_mod + 2πk) / (qτ)
+    For R^pix:   ω_R = (φ_mod + 2πk + q m δ) / (qτ)
+    
+    Returns list of (k, ω_R) tuples with ω_R > 0.
+    """
+    candidates = []
+    for k in k_range:
+        if aligned:
+            wR = (phase_mod + 2*np.pi*k) / tau_q
+        else:
+            wR = (phase_mod + 2*np.pi*k + q*m*delta_q) / tau_q
+        if wR > 0:
+            candidates.append((k, wR))
+    return candidates
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -185,13 +211,16 @@ def print_ratios(a=0.7, m=2):
         for q in [1, 2]:
             r = subring_ratio(a, m=m, q=q, aligned=aligned)
             lbl = r['label']
+            cand = r['omega_R_candidates']
             print(f"  R^{lbl} (q={q}):")
-            print(f"    |R_raw|  = {r['amp_raw']:.4f}   (exp[-qγ+qω_Iτ])")
-            print(f"    |R_geom| = {r['amp_geom']:.4f}   (exp[-qγ] only)")
-            print(f"    arg mod 360° = {r['phase_mod_deg']:.1f}°")
-            print(f"    arg unwrap   = {r['phase_unwrapped_deg']:.1f}°")
-            print(f"    branch k_min = {r['branch_k_min']}")
-            print(f"    ω_R from mod = {r['omega_R_from_phase_mod']:.4f}/M (need k={r['branch_k_min']} to recover true {wR:.4f})")
+            print(f"    |R_raw|  = {r['amp_raw']:.4f}   (exp[-q*gamma + q*omega_I*tau])")
+            print(f"    |R_geom| = {r['amp_geom']:.4f}   (exp[-q*gamma] only)")
+            print(f"    arg mod 360 = {r['phase_mod_deg']:.1f} deg")
+            print(f"    arg unwrap  = {r['phase_unwrapped_deg']:.1f} deg")
+            print(f"    omega_R candidates (k, value):")
+            for k, w in cand:
+                marker = " <-- true" if abs(w - wR) < 0.001 else ""
+                print(f"      k={k:+d}: {w:.4f}/M{marker}")
             print()
 
 

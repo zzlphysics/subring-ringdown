@@ -101,25 +101,30 @@ $\mathfrak{P}_n = \int_{\rm subring\;n} d\rho\, W_n(\rho,\varphi)\,[Q+iU](\rho,\
 3. ⬜ Synthetic QNM screen (Layer 1) — 最小可行验证
 4. ⬜ Full Teukolsky-CCK polarized ray tracing (Layer 2)
 
-## 论文策略
+## 验证路线
 
-- **主打相位**：$\arg R^{\rm align} \to q\omega_R\tau$ 最干净、最robust
-- **振幅放副结果**：$|R|$ 依赖 flux/Jacobian convention
-- **核心卖点**：subring index n 替代时间序列——"single-shot ringdown spectroscopy"
-- **与 DLT 的 novelty 对比表**必须在正文中明确
+| 层级 | 状态 | 含义 |
+|---|---|---|
+| Core formula | ✅ 完成 | R^{pix}, R^{align}, q, raw/geom, branch, basis convention |
+| Layer 0a | ✅ 完成 | GL2020 参数 near-critical scaling 半解析 consistency check |
+| Layer 0b | ⬜ 未完成 | 真实 Kerr geodesic integration + winding classifier |
+| Layer 1a | ✅ 完成 | Monodromy algebra demo (公式自洽性检验) |
+| Layer 1b | ⬜ 未完成 | 沿真实 geodesic 积分的 synthetic QNM screen |
+| Layer 2  | ⬜ 未完成 | Teukolsky-CCK 动态度规 + 偏振 parallel transport |
 
 ## 项目文件结构
 
 ```
 subring-ringdown/
-  theory_note.md         ← 本文件
-  conventions.md         ← 详细 convention 说明
+  theory_note.md              ← 本文件
   src/
-    subring_core.py      ← 核心计算模块（修正后）
-    fig_main.py          ← 主图
-  archive/               ← 旧版本（已废弃）
+    subring_core.py           ← 核心计算模块 (v2.0, 修正后)
+    fig_main.py               ← 四面板主图
+    layer0a_gl_consistency.py ← GL2020 半解析验证
+    layer1a_monodromy_demo.py ← Monodromy algebra demo
+  archive/                    ← 旧错误版本
   figures/
-    subring_main.png     ← 四面板主图
+    subring_main.png
 ```
 
 ## 参考文献

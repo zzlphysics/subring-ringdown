@@ -1,14 +1,18 @@
 """
-Layer 0: Kerr Geodesic Subring Classifier
-==========================================
-Backward ray-trace from face-on observer, classify rays by
-half-orbit count n, and verify:
+Layer 0a: GL2020 Semi-Analytic Consistency Check
+=================================================
+Verify Gralla-Lupsasca 2020 near-critical scaling relations
+using the analytic formulas directly (NOT from numerical ray tracing).
 
-  T_{n+q} - T_n → q τ    (time delay)
-  Φ_{n+q} - Φ_n → ± q δ  (azimuthal rotation, sign TBD)
-  ε_{n+q} / ε_n → e^{-q γ}  (radial demagnification)
+Verifies:
+  n ~ -ln(epsilon)/gamma
+  T_n ~ tau * n
+  Phi_n ~ delta * n
+  epsilon_{n+q}/epsilon_n -> exp(-q*gamma)
 
-This establishes the geometric conventions for all subsequent work.
+STATUS: Semi-analytic consistency check using GL2020 formulas directly.
+NOT an independent geodesic classifier. For independent validation,
+see Layer 0b (real Kerr geodesic integration — not yet implemented).
 """
 import numpy as np
 from scipy.integrate import solve_ivp

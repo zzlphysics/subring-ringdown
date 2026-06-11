@@ -1,28 +1,15 @@
 """
-Layer 1: Semi-analytic Synthetic QNM Screen Validation
-=======================================================
-Using the Gralla-Lupsasca near-critical expansion (Eqs. 115-127 of 1910.12873),
-evaluate the synthetic QNM response integral analytically and verify
-the subring ratio formula.
+Layer 1a: Monodromy Algebra Demo
+=================================
+Semi-analytic consistency check: generate DeltaP_n using the monodromy
+factor M = exp[-gamma + i(omega*tau - m*delta)] and verify that ratios
+converge to the predicted values.
 
-In the near-critical limit ε = b/b̃ - 1 → 0, the geodesic quantities are:
-  t(λ) = τ n(λ) + t_reg
-  φ(λ) = δ n(λ) + φ_reg
-  n(λ) = -ln|ε|/γ + f(λ)  (fractional half-orbit count)
+STATUS: This is NOT an independent validation. It directly constructs
+DeltaP_n from the formula being tested. Serves as code/plot sanity check.
 
-The synthetic response:
-  ΔP = ∫ dλ W(r) exp[-i ω t(λ) + i m φ(λ)]
-
-Each ray with half-orbit count n gives:
-  ΔP_n ≈ C × exp[-n γ] × exp[i n (ω τ - m δ)]  ×  (insensitive factor)
-
-Therefore R_{n,q} → exp[-q γ + i q (ω τ - m δ)] for R^{pix},
-and → exp[-q γ + i q ω τ] for R^{align}.
-
-This is NOT a tautology — each ΔP_n is computed from an independent
-integration along the geodesic. The geometric monodromy emerges from
-the fact that successive subring geodesics differ by one additional
-near-critical segment where t→t+τ and φ→φ+δ.
+For independent validation, see Layer 1b (synthetic QNM integral along
+real Kerr geodesics — not yet implemented).
 """
 import numpy as np
 from src.subring_core import (
@@ -72,25 +59,18 @@ def synthetic_response_analytic(a, m=2, sigma_r=0.5, n_rays=6):
     return ns, DeltaP, M_factor
 
 
-def compute_subring_ratios_from_data(ns, DeltaP, q=1):
+def compute_subring_ratios_from_data(ns, DeltaP, a, m, q=1):
     """Compute R_{n,q} from the synthetic response data.
-    
-    R^{pix}_{n,q} = ΔP_{n+q} / ΔP_n   (same screen angle)
-    
-    For R^{align}, we need ΔP_{n+q} shifted by qδ in screen angle.
-    In this simplified model where all rays are at φ=0:
-      ΔP_n(φ=0) has the phase factor from n half-orbits
-    
-    To get R^{align}, we note that ΔP_{n+q}(φ=0) already includes
-    the geometric rotation m q δ in its phase. To align, we need
-    to compare with ΔP_{n+q} computed at φ = q δ.
-    
-    Since we only have φ=0 data, we SIMULATE the aligned comparison by
-    removing the geometric phase:
-      R^{align}_{n,q} = R^{pix}_{n,q} × exp[i m q δ]
-    
-    This is equivalent to comparing ΔP_{n+q}(φ+qδ)/ΔP_n(φ).
+
+    R^{pix}_{n,q} = DeltaP_{n+q} / DeltaP_n   (same screen angle)
+
+    R^{align}: correct for geometric rotation by removing q*m*delta.
+    This simulates comparing at pattern-aligned screen position phi+q*delta
+    while keeping Q+iU in fixed Cartesian camera basis.
     """
+    crit = critical_exponents_polar(a)
+    delta = crit['delta']
+    
     ratios_pix = []
     ratios_align = []
     ns_ratio = []
@@ -99,15 +79,10 @@ def compute_subring_ratios_from_data(ns, DeltaP, q=1):
         n = ns[i]
         r_pix = DeltaP[i + q] / DeltaP[i]
         ratios_pix.append(r_pix)
-        ns_ratio.append(n)
-    
-    # R_align: correct for geometric rotation
-    crit = critical_exponents_polar(a_demo)
-    delta = crit['delta']
-    for i in range(len(DeltaP) - q):
-        r_pix = DeltaP[i + q] / DeltaP[i]
-        r_align = r_pix * np.exp(1j * m_demo * q * delta)
+        # R_align: remove geometric phase to simulate phi -> phi + q*delta alignment
+        r_align = r_pix * np.exp(1j * m * q * delta)
         ratios_align.append(r_align)
+        ns_ratio.append(n)
     
     return np.array(ns_ratio), np.array(ratios_pix), np.array(ratios_align)
 
@@ -118,7 +93,7 @@ def plot_layer1(a=0.7, m=2):
     gamma, tau, delta = crit['gamma'], crit['tau'], crit['delta']
     
     ns, DeltaP, M_factor = synthetic_response_analytic(a, m=m, n_rays=8)
-    ns_r, R_pix, R_align = compute_subring_ratios_from_data(ns, DeltaP, q=1)
+    ns_r, R_pix, R_align = compute_subring_ratios_from_data(ns, DeltaP, a, m, q=1)
     
     # Predicted values
     rp = subring_ratio(a, m=m, q=1, aligned=False)
